@@ -11,5 +11,6 @@ rm -rf packagedChaincode
 rm -rf config/ordererOrg/orderer.yaml
 rm -rf config/org1/core.yaml
 rm -rf config/org2/core.yaml
+rm -rf config/org3/core.yaml
 
 { set +x; } 2>/dev/null

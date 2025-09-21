@@ -4,8 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-Environment="FABRIC_CFG_PATH=$PWD/config/org2"
-ExecStart=/bin/bash -c "$PWD/bin_fabric/peer node start"
+Environment=FABRIC_CFG_PATH=$PWD/config/org2
+Environment=CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={\"org\":\"2\"}
+ExecStart=/bin/bash -c "$PWD/bin/fabric/peer node start"
 WorkingDirectory=$PWD
 Restart=on-failure
 

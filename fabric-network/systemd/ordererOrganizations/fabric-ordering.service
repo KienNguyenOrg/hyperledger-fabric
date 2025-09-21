@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 Environment="FABRIC_CFG_PATH=$PWD/config/ordererOrg"
-ExecStart=/bin/bash -c "$PWD/bin_fabric/orderer start"
+ExecStart=/bin/bash -c "$PWD/bin/fabric/orderer start"
 WorkingDirectory=$PWD
 Restart=on-failure
 

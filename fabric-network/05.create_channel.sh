@@ -11,16 +11,17 @@ MAX_RETRY="5"
 ORDERER_HOST=$1
 PEER1_HOST=$2
 PEER2_HOST=$3
+PEER3_HOST=$4
 
-if [ -z "$ORDERER_HOST" ] || [ -z "$PEER1_HOST" ] || [ -z "$PEER2_HOST" ]; then 
-  echo "Orderers, Peer1, Peer2 hostname not provided"
+if [ -z "$ORDERER_HOST" ] || [ -z "$PEER1_HOST" ] || [ -z "$PEER2_HOST" ] || [ -z "$PEER3_HOST" ]; then 
+  echo "Orderers, Peer1, Peer2, Peer3 hostname not provided"
   exit 1
 fi
 
 mkdir -p channel-artifacts
 
 createChannelGenesisBlock() {
-    $PWD/bin_fabric/configtxgen -profile ChannelUsingRaft -outputBlock $PWD/channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
+    $PWD/bin/fabric/configtxgen -profile ChannelUsingRaft -outputBlock $PWD/channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
     res=$?
     verifyResult $res "Failed to generate channel configuration transaction..."
 }
@@ -36,7 +37,7 @@ createChannel() {
         ORDERER_ADMIN_TLS_SIGN_CERT=${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/server.crt 
         ORDERER_ADMIN_TLS_PRIVATE_KEY=${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/server.key
         ORDERER_CA=${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/ca.crt
-        $PWD/bin_fabric/osnadmin channel join --channelID ${CHANNEL_NAME} --config-block $PWD/channel-artifacts/${CHANNEL_NAME}.block -o $ORDERER_HOST:9443 --ca-file "$ORDERER_CA" --client-cert "$ORDERER_ADMIN_TLS_SIGN_CERT" --client-key "$ORDERER_ADMIN_TLS_PRIVATE_KEY" >> log.txt 2>&1
+        $PWD/bin/fabric/osnadmin channel join --channelID ${CHANNEL_NAME} --config-block $PWD/channel-artifacts/${CHANNEL_NAME}.block -o $ORDERER_HOST:9443 --ca-file "$ORDERER_CA" --client-cert "$ORDERER_ADMIN_TLS_SIGN_CERT" --client-key "$ORDERER_ADMIN_TLS_PRIVATE_KEY" >> log.txt 2>&1
 		res=$?
 		{ set +x; } 2>/dev/null
 		let rc=$res
@@ -61,7 +62,7 @@ joinChannel() {
 	while [ $rc -ne 0 -a $COUNTER -lt $MAX_RETRY ] ; do
     sleep $DELAY
     set -x
-    $PWD/bin_fabric/peer channel join -b $BLOCKFILE >> log.txt 2>&1
+    $PWD/bin/fabric/peer channel join -b $BLOCKFILE >> log.txt 2>&1
     res=$?
     { set +x; } 2>/dev/null
 		let rc=$res
@@ -78,12 +79,12 @@ fetchChannelConfig() {
 
   echo "Fetching the most recent configuration block for the channel"
   set -x
-  $PWD/bin_fabric/peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o $ORDERER_HOST:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com -c $CHANNEL --tls --cafile "$ORDERER_CA"
+  $PWD/bin/fabric/peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o $ORDERER_HOST:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com -c $CHANNEL --tls --cafile "$ORDERER_CA"
   { set +x; } 2>/dev/null
 
   echo "Decoding config block to JSON and isolating config to ${OUTPUT}"
   set -x
-  $PWD/bin_fabric/configtxlator proto_decode --input ${PWD}/channel-artifacts/config_block.pb --type common.Block --output ${PWD}/channel-artifacts/config_block.json
+  $PWD/bin/fabric/configtxlator proto_decode --input ${PWD}/channel-artifacts/config_block.pb --type common.Block --output ${PWD}/channel-artifacts/config_block.json
   jq .data.data[0].payload.data.config ${PWD}/channel-artifacts/config_block.json >"${OUTPUT}"
   res=$?
   { set +x; } 2>/dev/null
@@ -97,12 +98,12 @@ createConfigUpdate() {
   OUTPUT=$4
 
   set -x
-  $PWD/bin_fabric/configtxlator proto_encode --input "${ORIGINAL}" --type common.Config --output ${PWD}/channel-artifacts/original_config.pb
-  $PWD/bin_fabric/configtxlator proto_encode --input "${MODIFIED}" --type common.Config --output ${PWD}/channel-artifacts/modified_config.pb
-  $PWD/bin_fabric/configtxlator compute_update --channel_id "${CHANNEL}" --original ${PWD}/channel-artifacts/original_config.pb --updated ${PWD}/channel-artifacts/modified_config.pb --output ${PWD}/channel-artifacts/config_update.pb
-  $PWD/bin_fabric/configtxlator proto_decode --input ${PWD}/channel-artifacts/config_update.pb --type common.ConfigUpdate --output ${PWD}/channel-artifacts/config_update.json
+  $PWD/bin/fabric/configtxlator proto_encode --input "${ORIGINAL}" --type common.Config --output ${PWD}/channel-artifacts/original_config.pb
+  $PWD/bin/fabric/configtxlator proto_encode --input "${MODIFIED}" --type common.Config --output ${PWD}/channel-artifacts/modified_config.pb
+  $PWD/bin/fabric/configtxlator compute_update --channel_id "${CHANNEL}" --original ${PWD}/channel-artifacts/original_config.pb --updated ${PWD}/channel-artifacts/modified_config.pb --output ${PWD}/channel-artifacts/config_update.pb
+  $PWD/bin/fabric/configtxlator proto_decode --input ${PWD}/channel-artifacts/config_update.pb --type common.ConfigUpdate --output ${PWD}/channel-artifacts/config_update.json
   echo '{"payload":{"header":{"channel_header":{"channel_id":"'$CHANNEL'", "type":2}},"data":{"config_update":'$(cat ${PWD}/channel-artifacts/config_update.json)'}}}' | jq . > ${PWD}/channel-artifacts/config_update_in_envelope.json
-  $PWD/bin_fabric/configtxlator proto_encode --input ${PWD}/channel-artifacts/config_update_in_envelope.json --type common.Envelope --output "${OUTPUT}"
+  $PWD/bin/fabric/configtxlator proto_encode --input ${PWD}/channel-artifacts/config_update_in_envelope.json --type common.Envelope --output "${OUTPUT}"
   { set +x; } 2>/dev/null
 }
 
@@ -123,7 +124,7 @@ setAnchorPeer() {
 
     createConfigUpdate ${CHANNEL_NAME} ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}config.json ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}modified_config.json ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx
 
-    $PWD/bin_fabric/peer channel update -o $ORDERER_HOST:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com -c $CHANNEL_NAME -f ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls --cafile "$ORDERER_CA" >> log.txt 2>&1
+    $PWD/bin/fabric/peer channel update -o $ORDERER_HOST:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com -c $CHANNEL_NAME -f ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls --cafile "$ORDERER_CA" >> log.txt 2>&1
     res=$?
     cat log.txt
     verifyResult $res "Anchor peer update failed"
@@ -151,12 +152,18 @@ joinChannel 1
 # echo "Joining org2 peer to the channel..."
 export FABRIC_CFG_PATH=$PWD/config/org2
 joinChannel 2
+# echo "Joining org3 peer to the channel..."
+export FABRIC_CFG_PATH=$PWD/config/org3
+joinChannel 3
 
 ## Set the anchor peers for each org in the channel
 echo "Setting anchor peer for org1..."
 setAnchorPeer 1
 # echo "Setting anchor peer for org2..."
 setAnchorPeer 2
+
+# echo "Setting anchor peer for org3..."
+setAnchorPeer 3
 
 echo "Channel '$CHANNEL_NAME' joined"
 

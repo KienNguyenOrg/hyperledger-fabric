@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c "$PWD/bin_chaincode/assetTransfer"
+ExecStart=/bin/bash -c "$PWD/bin/chaincode/assetTransfer"
 WorkingDirectory=$PWD/application-gateway-go
 Restart=on-failure
 

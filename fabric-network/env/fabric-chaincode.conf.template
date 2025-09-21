@@ -6,7 +6,5 @@ CORE_TLS_CLIENT_KEY_PATH="{{PWD}}/organizations/peerOrganizations/org1.atgdigita
 CORE_PEER_TLS_ROOTCERT_FILE="{{PWD}}/organizations/peerOrganizations/org1.atgdigitals.com/peers/peer0.org1.atgdigitals.com/tls/ca.crt"
 CORE_PEER_MSPCONFIGPATH="{{PWD}}/organizations/peerOrganizations/org1.atgdigitals.com/users/Admin@org1.atgdigitals.com/msp"
 CORE_PEER_TLS_ENABLED=true
-CORE_PEER_LOCALMSPID="Org1MSP"
-CORE_PEER_ADDRESS=peer0.org1.atgdigitals.com:7051
-
-
+CORE_PEER_LOCALMSPID="Org{{ORG}}MSP"
+CORE_PEER_ADDRESS=peer0.org{{ORG}}.atgdigitals.com:7051

@@ -21,4 +21,6 @@ echo $(ls $CORE_TLS_CLIENT_KEY_PATH)
 echo $(ls $CORE_PEER_TLS_ROOTCERT_FILE)
 echo $(ls $CORE_PEER_MSPCONFIGPATH)
 
-./bin_fabric/peer chaincode invoke   -C default-channel   -n chaincode-go-1-0   --peerAddresses $CORE_PEER_ADDRESS      --tlsRootCertFiles $CORE_PEER_TLS_ROOTCERT_FILE --tls --cafile $CA_FILE  -c '{"Args":["CreateAccount", "6"]}'
+./bin/fabric/peer lifecycle chaincode querycommitted --channelID default-channel
+
+# ./bin/fabric/peer chaincode invoke   -C default-channel   -n chaincode-go-1-0   --peerAddresses $CORE_PEER_ADDRESS      --tlsRootCertFiles $CORE_PEER_TLS_ROOTCERT_FILE --tls --cafile $CA_FILE  -c '{"Args":["CreateAccount", "6"]}'

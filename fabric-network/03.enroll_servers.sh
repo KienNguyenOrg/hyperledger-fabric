@@ -124,6 +124,7 @@ enrollOrg() {
 enrollOrder ordererOrg  orderer.atgdigitals.com 7054
 enrollOrg   org1        peer0.org1.atgdigitals.com 8054
 enrollOrg   org2        peer0.org2.atgdigitals.com 9054
+enrollOrg   org3        peer0.org3.atgdigitals.com 10054
 
 sleep 3
 

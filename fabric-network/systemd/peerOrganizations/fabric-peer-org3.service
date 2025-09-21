@@ -1,0 +1,14 @@
+[Unit]
+Description=Fabric Peer Org3 Service
+After=network.target
+
+[Service]
+Type=simple
+Environment=FABRIC_CFG_PATH=$PWD/config/org3
+Environment=CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={\"org\":\"3\"}
+ExecStart=/bin/bash -c "$PWD/bin/fabric/peer node start"
+WorkingDirectory=$PWD
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

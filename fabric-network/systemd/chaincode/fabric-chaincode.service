@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 EnvironmentFile=$PWD/env/fabric-chaincode.conf
-ExecStart=/bin/bash -c "$PWD/bin_chaincode/chaincode -peer.address=$CORE_PEER_ADDRESS"
+ExecStart=/bin/bash -c "$PWD/bin/chaincode/chaincode -peer.address=$CORE_PEER_ADDRESS"
 WorkingDirectory=$PWD
 Restart=on-failure
 

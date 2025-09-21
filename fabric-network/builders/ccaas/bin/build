@@ -11,8 +11,14 @@ if [ ! -f "$SOURCE/connection.json" ]; then
     exit 1
 fi
 
+if [ -z "${CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG:-}" ]; then
+    echo "CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG not set"
+    exit 1
+fi
+
 #simply copy the endpoint information to specified output location
-cp $SOURCE/connection.json $OUTPUT/connection.json
+ORG=$(echo $CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG | jq -r '.org')
+sed "s|{{.org}}|$ORG|g" "$SOURCE/connection.json" > "$OUTPUT/connection.json"
 
 if [ -d "$SOURCE/metadata" ]; then
     cp -a $SOURCE/metadata $OUTPUT/metadata

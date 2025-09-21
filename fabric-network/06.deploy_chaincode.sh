@@ -6,15 +6,18 @@ set -x
 
 PEER1_HOST=$2
 PEER2_HOST=$3
+PEER3_HOST=$4
+USERNAME=$5
+WORKING_DIR=$6
 CHANNEL_NAME=default-channel
 CC_SRC_PATH=$1
 CC_SRC_LANGUAGE=go
 CC_RUNTIME_LANGUAGE=golang
-CC_VERSION=${4:-"1.0"}
+CC_VERSION=1.0
 CC_NAME="$(basename "$CC_SRC_PATH")-${CC_VERSION//./-}"
 CC_SEQUENCE=auto
 CC_INIT_FCN=NA
-CC_END_POLICY="OR('Org1MSP.member', 'Org2MSP.member')"
+CC_END_POLICY="OutOf(2, 'Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')"
 CC_COLL_CONFIG=NA
 DELAY=3
 MAX_RETRY=5
@@ -61,11 +64,11 @@ function packageChaincode() {
     export FABRIC_CFG_PATH=$PWD/config/org1
     set -x
     mkdir -p packagedChaincode
-    $PWD/bin_fabric/peer lifecycle chaincode package packagedChaincode/${CC_NAME}.tar.gz --path ${CC_SRC_PATH} --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION} >> log.txt 2>&1
+    $PWD/bin/fabric/peer lifecycle chaincode package packagedChaincode/${CC_NAME}.tar.gz --path ${CC_SRC_PATH} --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION} >> log.txt 2>&1
     res=$?
     { set +x; } 2>/dev/null
     cat log.txt
-    PACKAGE_ID=$($PWD/bin_fabric/peer lifecycle chaincode calculatepackageid packagedChaincode/${CC_NAME}.tar.gz)
+    PACKAGE_ID=$($PWD/bin/fabric/peer lifecycle chaincode calculatepackageid packagedChaincode/${CC_NAME}.tar.gz)
     verifyResult $res "Chaincode packaging has failed"
     successln "Chaincode is packaged"
   fi
@@ -74,7 +77,7 @@ function packageChaincode() {
 packageChaincodeAAS() {
   mkdir -p packagedChaincode
   
-  address="peer0.org1.atgdigitals.com:9999"
+  address="peer0.org{{.org}}.atgdigitals.com:9999"
   prefix=$(basename "$0")
   tempdir=$(mktemp -d -t "$prefix.XXXXXXXX") || error_exit "Error creating temporary directory"
   label=${CC_NAME}_${CC_VERSION}
@@ -101,7 +104,7 @@ METADATA-EOF
     tar -C "$tempdir/pkg" -czf "packagedChaincode/$CC_NAME.tar.gz" metadata.json code.tar.gz
     rm -Rf "$tempdir"
 
-    PACKAGE_ID=$($PWD/bin_fabric/peer lifecycle chaincode calculatepackageid packagedChaincode/${CC_NAME}.tar.gz)
+    PACKAGE_ID=$($PWD/bin/fabric/peer lifecycle chaincode calculatepackageid packagedChaincode/${CC_NAME}.tar.gz)
   
     successln "Chaincode is packaged  ${address}"
 }
@@ -116,9 +119,9 @@ function installChaincode() {
   export CORE_PEER_LOCALMSPID=Org${ORG}MSP
 
   set -x
-  $PWD/bin_fabric/peer lifecycle chaincode queryinstalled --output json | jq -r 'try (.installed_chaincodes[].package_id)' | grep ^${PACKAGE_ID}$ >> log.txt 2>&1
+  $PWD/bin/fabric/peer lifecycle chaincode queryinstalled --output json | jq -r 'try (.installed_chaincodes[].package_id)' | grep ^${PACKAGE_ID}$ >> log.txt 2>&1
   if test $? -ne 0; then
-    $PWD/bin_fabric/peer lifecycle chaincode install packagedChaincode/${CC_NAME}.tar.gz >> log.txt 2>&1
+    $PWD/bin/fabric/peer lifecycle chaincode install packagedChaincode/${CC_NAME}.tar.gz >> log.txt 2>&1
     res=$?
   fi
   { set +x; } 2>/dev/null
@@ -140,7 +143,7 @@ function resolveSequence() {
   # we either get a successful response, or reach MAX RETRY
   while [ $rc -ne 0 -a $COUNTER -lt $MAX_RETRY ]; do
     set -x
-    COMMITTED_CC_SEQUENCE=$($PWD/bin_fabric/peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME} | sed -n "/Version:/{s/.*Sequence: //; s/, Endorsement Plugin:.*$//; p;}")
+    COMMITTED_CC_SEQUENCE=$($PWD/bin/fabric/peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME} | sed -n "/Version:/{s/.*Sequence: //; s/, Endorsement Plugin:.*$//; p;}")
     res=$?
     { set +x; } 2>/dev/null
     let rc=$res    
@@ -159,7 +162,7 @@ function resolveSequence() {
   # we either get a successful response, or reach MAX RETRY
   while [ $rc -ne 0 -a $COUNTER -lt $MAX_RETRY ]; do
     set -x
-    APPROVED_CC_SEQUENCE=$($PWD/bin_fabric/peer lifecycle chaincode queryapproved --channelID $CHANNEL_NAME --name ${CC_NAME} | sed -n "/sequence:/{s/^sequence: //; s/, version:.*$//; p;}")
+    APPROVED_CC_SEQUENCE=$($PWD/bin/fabric/peer lifecycle chaincode queryapproved --channelID $CHANNEL_NAME --name ${CC_NAME} | sed -n "/sequence:/{s/^sequence: //; s/, version:.*$//; p;}")
     res=$?
     { set +x; } 2>/dev/null
     let rc=$res
@@ -185,7 +188,7 @@ function queryInstalled() {
   export CORE_PEER_LOCALMSPID=Org${ORG}MSP
 
   set -x
-  $PWD/bin_fabric/peer lifecycle chaincode queryinstalled --output json | jq -r 'try (.installed_chaincodes[].package_id)' | grep ^${PACKAGE_ID}$ >> log.txt 2>&1
+  $PWD/bin/fabric/peer lifecycle chaincode queryinstalled --output json | jq -r 'try (.installed_chaincodes[].package_id)' | grep ^${PACKAGE_ID}$ >> log.txt 2>&1
   res=$?
   { set +x; } 2>/dev/null
   cat log.txt
@@ -203,7 +206,7 @@ function approveForMyOrg() {
   export CORE_PEER_LOCALMSPID=Org${ORG}MSP
 
   set -x
-  $PWD/bin_fabric/peer lifecycle chaincode approveformyorg -o orderer.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OR('Org1MSP.member', 'Org2MSP.member')" ${CC_COLL_CONFIG} >> log.txt 2>&1
+  $PWD/bin/fabric/peer lifecycle chaincode approveformyorg -o orderer.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OutOf(2, 'Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')" ${CC_COLL_CONFIG} >> log.txt 2>&1
   res=$?
   { set +x; } 2>/dev/null
   cat log.txt
@@ -230,7 +233,7 @@ function checkCommitReadiness() {
     sleep $DELAY
     infoln "Attempting to check the commit readiness of the chaincode definition on peer0.org${ORG}, Retry after $DELAY seconds."
     set -x
-    output=$($PWD/bin_fabric/peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OR('Org1MSP.member', 'Org2MSP.member')" ${CC_COLL_CONFIG} --output json 2>&1)
+    output=$($PWD/bin/fabric/peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OutOf(2, 'Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')" ${CC_COLL_CONFIG} --output json 2>&1)
     res=$?
     { set +x; } 2>/dev/null
     let rc=0
@@ -257,7 +260,7 @@ function commitChaincodeDefinition() {
   # peer (if join was successful), let's supply it directly as we know
   # it using the "-o" option
   set -x
-  $PWD/bin_fabric/peer lifecycle chaincode commit -o orderer.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OR('Org1MSP.member', 'Org2MSP.member')" ${CC_COLL_CONFIG} >> log.txt 2>&1
+  $PWD/bin/fabric/peer lifecycle chaincode commit -o orderer.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OutOf(2, 'Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')" ${CC_COLL_CONFIG} >> log.txt 2>&1
   res=$?
   { set +x; } 2>/dev/null
   cat log.txt
@@ -284,7 +287,7 @@ function queryCommitted() {
     sleep $DELAY
     infoln "Attempting to Query committed status on peer0.org${ORG}, Retry after $DELAY seconds."
     set -x
-    $PWD/bin_fabric/peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME} > log.txt 2>&1
+    $PWD/bin/fabric/peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME} > log.txt 2>&1
     res=$?
     { set +x; } 2>/dev/null
     test $res -eq 0 && VALUE=$(cat log.txt | grep -o '^Version: '$CC_VERSION', Sequence: [0-9]*, Endorsement Plugin: escc, Validation Plugin: vscc')
@@ -302,13 +305,15 @@ function queryCommitted() {
 ## package the chaincode
 packageChaincodeAAS 
 export FABRIC_CFG_PATH=$PWD/config/org1
-PACKAGE_ID=$($PWD/bin_fabric/peer lifecycle chaincode calculatepackageid packagedChaincode/${CC_NAME}.tar.gz)
+PACKAGE_ID=$($PWD/bin/fabric/peer lifecycle chaincode calculatepackageid packagedChaincode/${CC_NAME}.tar.gz)
 
 ## Install chaincode on peer0.org1 and peer0.org2
 # infoln "Installing chaincode on peer0.org1..."
 installChaincode 1
 # infoln "Install chaincode on peer0.org2..."
 installChaincode 2
+# infoln "Install chaincode on peer0.org3..."
+installChaincode 3
 
 resolveSequence
 
@@ -317,6 +322,8 @@ queryInstalled 1
 
 ## Start external chaincode server
 ./05.start_chaincode_server.sh $PACKAGE_ID 1
+ssh $USERNAME@peer0.org2.atgdigitals.com "cd $WORKING_DIR/hyperledger/fabric-network && sudo bash ./05.start_chaincode_server.sh $PACKAGE_ID 2"
+ssh $USERNAME@peer0.org3.atgdigitals.com "cd $WORKING_DIR/hyperledger/fabric-network && sudo bash ./05.start_chaincode_server.sh $PACKAGE_ID 3"
 
 ## approve the definition for org1
 approveForMyOrg 1
@@ -332,13 +339,17 @@ approveForMyOrg 2
 ## expect them both to have approved
 # checkCommitReadiness 2 "\"Org2MSP\": true"
 
+## now approve also for org3
+approveForMyOrg 3
+
 ## now that we know for sure both orgs have approved, commit the definition
 # commitChaincodeDefinition 1 $PEER1_HOST
-commitChaincodeDefinition 1 $PEER1_HOST 2 $PEER2_HOST
+commitChaincodeDefinition 1 $PEER1_HOST 2 $PEER2_HOST 3 $PEER3_HOST
 
 ## query on both orgs to see that the definition committed successfully
 queryCommitted 1
 queryCommitted 2
+queryCommitted 3
 
 ## Invoke the chaincode - this does require that the chaincode have the 'initLedger'
 ## method defined

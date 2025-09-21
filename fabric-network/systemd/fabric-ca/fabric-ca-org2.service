@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c "$PWD/bin/fabric-ca-server start --tls.enabled --csr.hosts peer0.org1.atgdigitals.com,peer0.org2.atgdigitals.com"
+ExecStart=/bin/bash -c "$PWD/bin/fabric-ca-server start --tls.enabled --csr.hosts peer0.org1.atgdigitals.com,peer0.org2.atgdigitals.com,peer0.org3.atgdigitals.com"
 WorkingDirectory=$PWD/organizations/fabric-ca/org2
 Restart=on-failure
 
