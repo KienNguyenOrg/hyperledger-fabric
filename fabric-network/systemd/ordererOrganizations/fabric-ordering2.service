@@ -1,0 +1,13 @@
+[Unit]
+Description=Fabric Ordering2 Service
+After=network.target
+
+[Service]
+Type=simple
+Environment="FABRIC_CFG_PATH=$PWD/config/ordererOrg2"
+ExecStart=/bin/bash -c "$PWD/bin/fabric/orderer start"
+WorkingDirectory=$PWD
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -7,7 +7,7 @@ export CHAINCODE_ID=chaincode-go-1-0_1.0:a9ba9e94c6c8924089648f83797f265d8bfc792
 export CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
 
 export FABRIC_CFG_PATH=$PWD/config/org$ORG
-export CA_FILE="$PWD/organizations/ordererOrganizations/atgdigitals.com/tlsca/tlsca.atgdigitals.com-cert.pem"
+export CA_FILE="$PWD/organizations/ordererOrganizations/atgdigitals.com/tlsca/tlsca.org$ORG.atgdigitals.com-cert.pem"
 export CORE_TLS_CLIENT_CERT_FILE="$PWD/organizations/peerOrganizations/org$ORG.atgdigitals.com/peers/peer0.org$ORG.atgdigitals.com/tls/server.crt"
 export CORE_TLS_CLIENT_KEY_PATH="$PWD/organizations/peerOrganizations/org$ORG.atgdigitals.com/peers/peer0.org$ORG.atgdigitals.com/tls/server.key"
 export CORE_PEER_TLS_ROOTCERT_FILE="$PWD/organizations/peerOrganizations/org$ORG.atgdigitals.com/peers/peer0.org$ORG.atgdigitals.com/tls/ca.crt"

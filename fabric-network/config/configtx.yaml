@@ -13,31 +13,81 @@
 #
 ################################################################################
 Organizations:
-  - &OrdererOrg
+  - &OrdererOrg1
     # SampleOrg defines an MSP using the sampleconfig.  It should never be used
     # in production but may be used as a template for other definitions
     # DefaultOrg defines the organization which is used in the sampleconfig
     # of the fabric.git development environment
-    Name: OrdererMSP
+    Name: Orderer1MSP
     # ID to load the MSP definition as
-    ID: OrdererMSP
+    ID: Orderer1MSP
     # MSPDir is the filesystem path which contains the MSP configuration
-    MSPDir: ../organizations/ordererOrganizations/atgdigitals.com/msp
+    MSPDir: ../organizations/ordererOrganizations/org1.atgdigitals.com/msp
     # Policies defines the set of policies at this level of the config tree
     # For organization policies, their canonical path is usually
     #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
     Policies:
       Readers:
         Type: Signature
-        Rule: "OR('OrdererMSP.member')"
+        Rule: "OR('Orderer1MSP.member')"
       Writers:
         Type: Signature
-        Rule: "OR('OrdererMSP.member')"
+        Rule: "OR('Orderer1MSP.member')"
       Admins:
         Type: Signature
-        Rule: "OR('OrdererMSP.admin')"
+        Rule: "OR('Orderer1MSP.admin')"
     OrdererEndpoints:
-      - orderer.atgdigitals.com:7050
+      - orderer1.atgdigitals.com:7050
+  - &OrdererOrg2
+    # SampleOrg defines an MSP using the sampleconfig.  It should never be used
+    # in production but may be used as a template for other definitions
+    # DefaultOrg defines the organization which is used in the sampleconfig
+    # of the fabric.git development environment
+    Name: Orderer2MSP
+    # ID to load the MSP definition as
+    ID: Orderer2MSP
+    # MSPDir is the filesystem path which contains the MSP configuration
+    MSPDir: ../organizations/ordererOrganizations/org2.atgdigitals.com/msp
+    # Policies defines the set of policies at this level of the config tree
+    # For organization policies, their canonical path is usually
+    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('Orderer2MSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('Orderer2MSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('Orderer2MSP.admin')"
+    OrdererEndpoints:
+      - orderer2.atgdigitals.com:7050
+  - &OrdererOrg3
+    # SampleOrg defines an MSP using the sampleconfig.  It should never be used
+    # in production but may be used as a template for other definitions
+    # DefaultOrg defines the organization which is used in the sampleconfig
+    # of the fabric.git development environment
+    Name: Orderer3MSP
+    # ID to load the MSP definition as
+    ID: Orderer3MSP
+    # MSPDir is the filesystem path which contains the MSP configuration
+    MSPDir: ../organizations/ordererOrganizations/org3.atgdigitals.com/msp
+    # Policies defines the set of policies at this level of the config tree
+    # For organization policies, their canonical path is usually
+    #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('Orderer3MSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('Orderer3MSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('Orderer3MSP.admin')"
+    OrdererEndpoints:
+      - orderer3.atgdigitals.com:7050
   - &Org1
     # DefaultOrg defines the organization which is used in the sampleconfig
     # of the fabric.git development environment
@@ -206,7 +256,9 @@ Orderer: &OrdererDefaults
   # as TLS validation.  The preferred way to specify orderer addresses is now
   # to include the OrdererEndpoints item in your org definition
   Addresses:
-    - orderer.atgdigitals.com:7050
+    - orderer1.atgdigitals.com:7050
+    - orderer2.atgdigitals.com:7050
+    - orderer3.atgdigitals.com:7050
   # Batch Timeout: The amount of time to wait before creating a batch
   BatchTimeout: 200ms
   # Batch Size: Controls the number of messages batched into a block
@@ -287,12 +339,22 @@ Profiles:
       OrdererType: etcdraft
       EtcdRaft:
         Consenters:
-          - Host: orderer.atgdigitals.com
+          - Host: orderer1.atgdigitals.com
             Port: 7050
-            ClientTLSCert: ../organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/server.crt
-            ServerTLSCert: ../organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/server.crt
+            ClientTLSCert: ../organizations/ordererOrganizations/org1.atgdigitals.com/orderers/orderer1.atgdigitals.com/tls/server.crt
+            ServerTLSCert: ../organizations/ordererOrganizations/org1.atgdigitals.com/orderers/orderer1.atgdigitals.com/tls/server.crt
+          - Host: orderer2.atgdigitals.com
+            Port: 7050
+            ClientTLSCert: ../organizations/ordererOrganizations/org2.atgdigitals.com/orderers/orderer2.atgdigitals.com/tls/server.crt
+            ServerTLSCert: ../organizations/ordererOrganizations/org2.atgdigitals.com/orderers/orderer2.atgdigitals.com/tls/server.crt
+          - Host: orderer3.atgdigitals.com
+            Port: 7050
+            ClientTLSCert: ../organizations/ordererOrganizations/org3.atgdigitals.com/orderers/orderer3.atgdigitals.com/tls/server.crt
+            ServerTLSCert: ../organizations/ordererOrganizations/org3.atgdigitals.com/orderers/orderer3.atgdigitals.com/tls/server.crt
       Organizations:
-        - *OrdererOrg
+        - *OrdererOrg1
+        - *OrdererOrg2
+        - *OrdererOrg3
       Capabilities: *OrdererCapabilities
     Application:
       <<: *ApplicationDefaults

@@ -1,0 +1,12 @@
+[Unit]
+Description=Fabric CA OrdererOrg3 Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c "$PWD/bin/fabric-ca-server start --tls.enabled --csr.hosts orderer1.atgdigitals.com,orderer2.atgdigitals.com,orderer3.atgdigitals.com"
+WorkingDirectory=$PWD/organizations/fabric-ca/ordererOrg3
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

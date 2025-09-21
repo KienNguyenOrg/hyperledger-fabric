@@ -8,15 +8,12 @@ CHANNEL_NAME=default-channel
 DELAY="3"
 MAX_RETRY="5"
 
-ORDERER_HOST=$1
-PEER1_HOST=$2
-PEER2_HOST=$3
-PEER3_HOST=$4
-
-if [ -z "$ORDERER_HOST" ] || [ -z "$PEER1_HOST" ] || [ -z "$PEER2_HOST" ] || [ -z "$PEER3_HOST" ]; then 
-  echo "Orderers, Peer1, Peer2, Peer3 hostname not provided"
-  exit 1
-fi
+ORDERER1_HOST=orderer1.atgdigitals.com
+ORDERER2_HOST=orderer2.atgdigitals.com
+ORDERER3_HOST=orderer3.atgdigitals.com
+PEER1_HOST=peer0.org1.atgdigitals.com
+PEER2_HOST=peer0.org2.atgdigitals.com
+PEER3_HOST=peer0.org3.atgdigitals.com
 
 mkdir -p channel-artifacts
 
@@ -28,16 +25,17 @@ createChannelGenesisBlock() {
 
 createChannel() {
 	# Poll in case the raft leader is not set yet
-	local rc=1
+	local ORG=$1
+  local rc=1
 	local COUNTER=1
 	echo "Adding orderers"
 	while [ $rc -ne 0 -a $COUNTER -lt $MAX_RETRY ] ; do
 		sleep $DELAY
 		set -x
-        ORDERER_ADMIN_TLS_SIGN_CERT=${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/server.crt 
-        ORDERER_ADMIN_TLS_PRIVATE_KEY=${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/server.key
-        ORDERER_CA=${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/ca.crt
-        $PWD/bin/fabric/osnadmin channel join --channelID ${CHANNEL_NAME} --config-block $PWD/channel-artifacts/${CHANNEL_NAME}.block -o $ORDERER_HOST:9443 --ca-file "$ORDERER_CA" --client-cert "$ORDERER_ADMIN_TLS_SIGN_CERT" --client-key "$ORDERER_ADMIN_TLS_PRIVATE_KEY" >> log.txt 2>&1
+        ORDERER_ADMIN_TLS_SIGN_CERT=${PWD}/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/server.crt 
+        ORDERER_ADMIN_TLS_PRIVATE_KEY=${PWD}/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/server.key
+        ORDERER_CA=${PWD}/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/ca.crt
+        $PWD/bin/fabric/osnadmin channel join --channelID ${CHANNEL_NAME} --config-block $PWD/channel-artifacts/${CHANNEL_NAME}.block -o orderer$ORG.atgdigitals.com:9443 --ca-file "$ORDERER_CA" --client-cert "$ORDERER_ADMIN_TLS_SIGN_CERT" --client-key "$ORDERER_ADMIN_TLS_PRIVATE_KEY" >> log.txt 2>&1
 		res=$?
 		{ set +x; } 2>/dev/null
 		let rc=$res
@@ -79,7 +77,8 @@ fetchChannelConfig() {
 
   echo "Fetching the most recent configuration block for the channel"
   set -x
-  $PWD/bin/fabric/peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o $ORDERER_HOST:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com -c $CHANNEL --tls --cafile "$ORDERER_CA"
+  ORDERER_CA=${PWD}/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/ca.crt
+  $PWD/bin/fabric/peer channel fetch config ${PWD}/channel-artifacts/config_block.pb -o orderer$ORG.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer$ORG.atgdigitals.com -c $CHANNEL --tls --cafile "$ORDERER_CA"
   { set +x; } 2>/dev/null
 
   echo "Decoding config block to JSON and isolating config to ${OUTPUT}"
@@ -123,8 +122,9 @@ setAnchorPeer() {
     verifyResult $res "Channel configuration update for anchor peer failed, make sure you have jq installed"
 
     createConfigUpdate ${CHANNEL_NAME} ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}config.json ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}modified_config.json ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx
-
-    $PWD/bin/fabric/peer channel update -o $ORDERER_HOST:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com -c $CHANNEL_NAME -f ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls --cafile "$ORDERER_CA" >> log.txt 2>&1
+  
+    ORDERER_CA=${PWD}/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/ca.crt
+    $PWD/bin/fabric/peer channel update -o orderer$ORG.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer$ORG.atgdigitals.com -c $CHANNEL_NAME -f ${PWD}/channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls --cafile "$ORDERER_CA" >> log.txt 2>&1
     res=$?
     cat log.txt
     verifyResult $res "Anchor peer update failed"
@@ -142,7 +142,9 @@ fi
 
 ## Create channel
 echo "Creating channel ${CHANNEL_NAME}"
-createChannel
+createChannel 1
+createChannel 2
+createChannel 3
 echo "Channel '$CHANNEL_NAME' created"
 
 ## Join all the peers to the channel

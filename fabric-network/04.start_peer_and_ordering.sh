@@ -30,26 +30,28 @@ function run_peer() {
 }
 
 function run_ordering() {
-    local MODE=$1
+    NAME=$1 
+    local ORG=$(echo "$NAME" | sed 's/[^0-9]//g')
+    local MODE=$2
 
     if [ "$MODE" == 'status' ]; then
-        systemctl status fabric-ordering.service
+        systemctl status fabric-ordering${ORG}.service
         return 0
     fi
     
-    mkdir -p $PWD/chain-data/ordererOrganizations/atgdigitals.com/etcdraft/{wal,snapshot}
-    sed "s|Location: /var/hyperledger/production/orderer|Location: $PWD/chain-data/ordererOrganizations/atgdigitals.com|g" $PWD/config/ordererOrg/orderer.yaml.template > $PWD/config/ordererOrg/orderer.yaml
-    sed -i "s|WALDir: /var/hyperledger/production/orderer/etcdraft/wal|WALDir: $PWD/chain-data/ordererOrganizations/atgdigitals.com/etcdraft/wal|g" $PWD/config/ordererOrg/orderer.yaml
-    sed -i "s|SnapDir: /var/hyperledger/production/orderer/etcdraft/snapshot|SnapDir: $PWD/chain-data/ordererOrganizations/atgdigitals.com/etcdraft/snapshot|g" $PWD/config/ordererOrg/orderer.yaml
+    mkdir -p $PWD/chain-data/ordererOrganizations/org$ORG.atgdigitals.com/etcdraft/{wal,snapshot}
+    sed "s|Location: /var/hyperledger/production/orderer|Location: $PWD/chain-data/ordererOrganizations/org$ORG.atgdigitals.com|g" $PWD/config/ordererOrg$ORG/orderer.yaml.template > $PWD/config/ordererOrg$ORG/orderer.yaml
+    sed -i "s|WALDir: /var/hyperledger/production/orderer/etcdraft/wal|WALDir: $PWD/chain-data/ordererOrganizations/org$ORG.atgdigitals.com/etcdraft/wal|g" $PWD/config/ordererOrg$ORG/orderer.yaml
+    sed -i "s|SnapDir: /var/hyperledger/production/orderer/etcdraft/snapshot|SnapDir: $PWD/chain-data/ordererOrganizations/org$ORG.atgdigitals.com/etcdraft/snapshot|g" $PWD/config/ordererOrg$ORG/orderer.yaml
 
-    sed -i "s|PrivateKey: |PrivateKey: $PWD/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/server.key|g" $PWD/config/ordererOrg/orderer.yaml
-    sed -i "s|Certificate: |Certificate: $PWD/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/server.crt|g" $PWD/config/ordererOrg/orderer.yaml
-    sed -i "s|    RootCAs:|    RootCAs: $PWD/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/ca.crt|g" $PWD/config/ordererOrg/orderer.yaml
-    sed -i "s|ClientRootCAs: \[\]|ClientRootCAs: [$PWD/organizations/ordererOrganizations/atgdigitals.com/orderers/orderer.atgdigitals.com/tls/ca.crt]|g" $PWD/config/ordererOrg/orderer.yaml
-    sed -i "s|ListenAddress: 127.0.0.1:9443|ListenAddress: 0.0.0.0:9443|g" $PWD/config/ordererOrg/orderer.yaml
-    sed -i "s|ListenAddress: 127.0.0.1|ListenAddress: 0.0.0.0|g" $PWD/config/ordererOrg/orderer.yaml
+    sed -i "s|PrivateKey: |PrivateKey: $PWD/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/server.key|g" $PWD/config/ordererOrg$ORG/orderer.yaml
+    sed -i "s|Certificate: |Certificate: $PWD/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/server.crt|g" $PWD/config/ordererOrg$ORG/orderer.yaml
+    sed -i "s|    RootCAs:|    RootCAs: $PWD/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/ca.crt|g" $PWD/config/ordererOrg$ORG/orderer.yaml
+    sed -i "s|ClientRootCAs: \[\]|ClientRootCAs: [$PWD/organizations/ordererOrganizations/org$ORG.atgdigitals.com/orderers/orderer$ORG.atgdigitals.com/tls/ca.crt]|g" $PWD/config/ordererOrg$ORG/orderer.yaml
+    sed -i "s|ListenAddress: 127.0.0.1:9443|ListenAddress: 0.0.0.0:9443|g" $PWD/config/ordererOrg$ORG/orderer.yaml
+    sed -i "s|ListenAddress: 127.0.0.1|ListenAddress: 0.0.0.0|g" $PWD/config/ordererOrg$ORG/orderer.yaml
         
-    systemctl $MODE fabric-ordering.service
+    systemctl $MODE fabric-ordering${ORG}.service
 }
 
 if [[ $ORG == *"org"* ]]; then 
@@ -58,7 +60,7 @@ if [[ $ORG == *"org"* ]]; then
 fi 
 
 if [[ $ORG == *"orderer"* ]]; then 
-    run_ordering $MODE
+    run_ordering $ORG $MODE
     sleep 3
 fi
 

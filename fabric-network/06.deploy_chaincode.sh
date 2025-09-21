@@ -39,7 +39,6 @@ println "- MAX_RETRY: ${C_GREEN}${MAX_RETRY}${C_RESET}"
 println "- VERBOSE: ${C_GREEN}${VERBOSE}${C_RESET}"
 
 INIT_REQUIRED="--init-required"
-export ORDERER_CA=${PWD}/organizations/ordererOrganizations/atgdigitals.com/tlsca/tlsca.atgdigitals.com-cert.pem
 # check if the init fcn should be called
 if [ "$CC_INIT_FCN" = "NA" ]; then
   INIT_REQUIRED=""
@@ -106,7 +105,7 @@ METADATA-EOF
 
     PACKAGE_ID=$($PWD/bin/fabric/peer lifecycle chaincode calculatepackageid packagedChaincode/${CC_NAME}.tar.gz)
   
-    successln "Chaincode is packaged  ${address}"
+    successln "Chaincode is packaged ${address}"
 }
 
 function installChaincode() {
@@ -204,9 +203,10 @@ function approveForMyOrg() {
   export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org${ORG}.atgdigitals.com/users/Admin@org${ORG}.atgdigitals.com/msp
   export CORE_PEER_ADDRESS=${!HOST}:7051
   export CORE_PEER_LOCALMSPID=Org${ORG}MSP
+  ORDERER_CA=${PWD}/organizations/ordererOrganizations/org${ORG}.atgdigitals.com/tlsca/tlsca.org${ORG}.atgdigitals.com-cert.pem
 
   set -x
-  $PWD/bin/fabric/peer lifecycle chaincode approveformyorg -o orderer.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OutOf(2, 'Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')" ${CC_COLL_CONFIG} >> log.txt 2>&1
+  $PWD/bin/fabric/peer lifecycle chaincode approveformyorg -o orderer$ORG.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer$ORG.atgdigitals.com --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OutOf(2, 'Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')" ${CC_COLL_CONFIG} >> log.txt 2>&1
   res=$?
   { set +x; } 2>/dev/null
   cat log.txt
@@ -259,8 +259,9 @@ function commitChaincodeDefinition() {
   # while 'peer chaincode' command can get the orderer endpoint from the
   # peer (if join was successful), let's supply it directly as we know
   # it using the "-o" option
+  ORDERER_CA=${PWD}/organizations/ordererOrganizations/org1.atgdigitals.com/tlsca/tlsca.org1.atgdigitals.com-cert.pem
   set -x
-  $PWD/bin/fabric/peer lifecycle chaincode commit -o orderer.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer.atgdigitals.com --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OutOf(2, 'Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')" ${CC_COLL_CONFIG} >> log.txt 2>&1
+  $PWD/bin/fabric/peer lifecycle chaincode commit -o orderer1.atgdigitals.com:7050 --ordererTLSHostnameOverride orderer1.atgdigitals.com --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} --signature-policy "OutOf(2, 'Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')" ${CC_COLL_CONFIG} >> log.txt 2>&1
   res=$?
   { set +x; } 2>/dev/null
   cat log.txt

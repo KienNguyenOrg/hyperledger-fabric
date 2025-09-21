@@ -15,13 +15,14 @@ set -e
 ##################################################################
 enrollOrder() {
     local NAME=$1
+    local IDX=$(echo "$NAME" | sed 's/[^0-9]//g')
     local CA_HOST=$2
     local CA_PORT=$3
     local ORDERER=orderer
     
-    export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/ordererOrganizations/atgdigitals.com
+    export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com
     mkdir -p $FABRIC_CA_CLIENT_HOME
-    $FABRIC_HOME/bin/fabric-ca-client enroll -u "https://$ADMIN_USER:$ADMIN_PWD@$CA_HOST:$CA_PORT" --tls.certfiles $PWD/organizations/fabric-ca/$NAME/ca-cert.pem --csr.hosts $CA_HOST
+    $FABRIC_HOME/bin/fabric-ca-client enroll -u "https://$ADMIN_USER:$ADMIN_PWD@orderer1.atgdigitals.com:$CA_PORT" --tls.certfiles $PWD/organizations/fabric-ca/$NAME/ca-cert.pem --csr.hosts $CA_HOST
 
     echo "NodeOUs:
     Enable: true
@@ -36,29 +37,30 @@ enrollOrder() {
         OrganizationalUnitIdentifier: admin
     OrdererOUIdentifier:
         Certificate: cacerts/$CA_HOST-$CA_PORT.pem
-        OrganizationalUnitIdentifier: orderer" > "${PWD}/organizations/ordererOrganizations/atgdigitals.com/msp/config.yaml"
+        OrganizationalUnitIdentifier: orderer" > "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/msp/config.yaml"
 
-    mkdir -p "${PWD}/organizations/ordererOrganizations/atgdigitals.com/msp/tlscacerts"
-    cp "${PWD}/organizations/fabric-ca/ordererOrg/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/atgdigitals.com/msp/tlscacerts/tlsca.atgdigitals.com-cert.pem"
+    CA_HOST=orderer1.atgdigitals.com
+    mkdir -p "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/msp/tlscacerts"
+    cp "${PWD}/organizations/fabric-ca/$NAME/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/msp/tlscacerts/tlsca.org$IDX.atgdigitals.com-cert.pem"
 
     # Copy orderer org's CA cert to orderer org's /tlsca directory (for use by clients)
-    mkdir -p "${PWD}/organizations/ordererOrganizations/atgdigitals.com/tlsca"
-    cp "${PWD}/organizations/fabric-ca/ordererOrg/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/atgdigitals.com/tlsca/tlsca.atgdigitals.com-cert.pem"
+    mkdir -p "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/tlsca"
+    cp "${PWD}/organizations/fabric-ca/$NAME/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/tlsca/tlsca.org$IDX.atgdigitals.com-cert.pem"
 
-    $FABRIC_HOME/bin/fabric-ca-client register --id.name ${ORDERER} --id.secret ${ORDERER}pw --id.type orderer --tls.certfiles "${PWD}/organizations/fabric-ca/ordererOrg/ca-cert.pem"
-    $FABRIC_HOME/bin/fabric-ca-client enroll -u https://${ORDERER}:${ORDERER}pw@$CA_HOST:$CA_PORT -M "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/ordererOrg/ca-cert.pem"
-    cp "${PWD}/organizations/ordererOrganizations/atgdigitals.com/msp/config.yaml" "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/msp/config.yaml"
-    mv "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/msp/signcerts/cert.pem" "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/msp/signcerts/${ORDERER}.atgdigitals.com-cert.pem"
-    $FABRIC_HOME/bin/fabric-ca-client enroll -u https://${ORDERER}:${ORDERER}pw@$CA_HOST:$CA_PORT -M "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/tls" --enrollment.profile tls --csr.hosts ${ORDERER}.atgdigitals.com --csr.hosts ${ORDERER}.atgdigitals.com --tls.certfiles "${PWD}/organizations/fabric-ca/ordererOrg/ca-cert.pem"
+    $FABRIC_HOME/bin/fabric-ca-client register --id.name ${ORDERER} --id.secret ${ORDERER}pw --id.type orderer --tls.certfiles "${PWD}/organizations/fabric-ca/$NAME/ca-cert.pem"
+    $FABRIC_HOME/bin/fabric-ca-client enroll -u https://${ORDERER}:${ORDERER}pw@$CA_HOST:$CA_PORT -M "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/$NAME/ca-cert.pem"
+    cp "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/msp/config.yaml" "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/msp/config.yaml"
+    mv "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/msp/signcerts/cert.pem" "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/msp/signcerts/orderer${IDX}.atgdigitals.com-cert.pem"
+    $FABRIC_HOME/bin/fabric-ca-client enroll -u https://${ORDERER}:${ORDERER}pw@$CA_HOST:$CA_PORT -M "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/tls" --enrollment.profile tls --csr.hosts orderer${IDX}.atgdigitals.com --tls.certfiles "${PWD}/organizations/fabric-ca/$NAME/ca-cert.pem"
 
     # Copy the tls CA cert, server cert, server keystore to well known file names in the orderer's tls directory that are referenced by orderer startup config
-    cp "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/tls/ca.crt"
-    cp "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/tls/signcerts/"* "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/tls/server.crt"
-    cp "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/tls/keystore/"* "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/tls/server.key"
+    cp "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/tls/ca.crt"
+    cp "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/tls/signcerts/"* "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/tls/server.crt"
+    cp "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/tls/keystore/"* "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/tls/server.key"
 
     # Copy orderer org's CA cert to orderer's /msp/tlscacerts directory (for use in the orderer MSP definition)
-    mkdir -p "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/msp/tlscacerts"
-    cp "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/atgdigitals.com/orderers/${ORDERER}.atgdigitals.com/msp/tlscacerts/tlsca.atgdigitals.com-cert.pem"
+    mkdir -p "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/msp/tlscacerts"
+    cp "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/org${IDX}.atgdigitals.com/orderers/orderer${IDX}.atgdigitals.com/msp/tlscacerts/tlsca.org$IDX.atgdigitals.com-cert.pem"
 }
 ##################################################################
 enrollOrg() {
@@ -121,7 +123,9 @@ enrollOrg() {
 }
 
 
-enrollOrder ordererOrg  orderer.atgdigitals.com 7054
+enrollOrder ordererOrg1  orderer1.atgdigitals.com 5054
+enrollOrder ordererOrg2  orderer2.atgdigitals.com 6054
+enrollOrder ordererOrg3  orderer3.atgdigitals.com 7054
 enrollOrg   org1        peer0.org1.atgdigitals.com 8054
 enrollOrg   org2        peer0.org2.atgdigitals.com 9054
 enrollOrg   org3        peer0.org3.atgdigitals.com 10054

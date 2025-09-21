@@ -6,11 +6,15 @@ set -x
 
 sudo cp $PWD/systemd/*/*.service  /etc/systemd/system/
 
-sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ca-ordererOrg.service
+sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ca-ordererOrg1.service
+sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ca-ordererOrg2.service
+sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ca-ordererOrg3.service
 sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ca-org1.service
 sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ca-org2.service
 sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ca-org3.service
-sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ordering.service
+sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ordering1.service
+sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ordering2.service
+sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-ordering3.service
 sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-peer-org1.service
 sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-peer-org2.service
 sudo sed -i "s|\$PWD|$PWD|g" /etc/systemd/system/fabric-peer-org3.service
