@@ -6,11 +6,11 @@ namespace Gateway.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class TestController : ControllerBase
+    public class Test2Controller : ControllerBase
     {
-        private readonly ILogger<TestController> _logger;
+        private readonly ILogger<Test2Controller> _logger;
 
-        public TestController(ILogger<TestController> logger)
+        public Test2Controller(ILogger<Test2Controller> logger)
         {
             _logger = logger;
         }
